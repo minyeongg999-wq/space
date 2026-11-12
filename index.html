@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ROCKET SIM · Flight Simulation</title>
+    <meta name="description" content="로켓 발사와 단 분리 과정을 직접 조작하고 관찰하는 교육용 비행 시뮬레이터">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="top">
+        <div class="brand">
+            <span class="logo">R</span>
+            <div>
+                <b>ROCKET SIM</b>
+                <small>FLIGHT SIMULATION SYSTEM</small>
+            </div>
+        </div>
+        <div class="session">SIMULATION SESSION <b>RS-01</b></div>
+    </header>
+
+    <main class="layout">
+        <!-- 비행 뷰 -->
+        <section class="view" id="view">
+            <canvas id="scene" aria-label="로켓 비행 화면"></canvas>
+
+            <div class="hud hud-tl">
+                <span class="chip" id="phaseChip" data-state="standby">STANDBY · PAD READY</span>
+                <span class="mission">MISSION <b>ORBIT INSERTION</b></span>
+            </div>
+            <div class="hud hud-tr">
+                <button class="icon-btn" id="btnMute" title="효과음 (M)" aria-label="효과음 켜기/끄기">🔊</button>
+            </div>
+            <div class="hud hud-bl">EDUCATIONAL MODEL · NOT TO SCALE</div>
+
+            <div class="count" id="count" aria-live="polite"></div>
+
+            <div class="result" id="result" hidden>
+                <div class="result-card" id="resultCard">
+                    <div class="result-tag" id="resultTag">MISSION</div>
+                    <h2 id="resultTitle">—</h2>
+                    <p id="resultReason"></p>
+                    <dl class="result-stats" id="resultStats"></dl>
+                    <div class="result-actions">
+                        <button class="btn primary" id="btnAgain">↻ 다시 발사</button>
+                        <button class="btn" id="btnResultReset">리셋</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 관제 패널 -->
+        <aside class="panel">
+            <div class="card">
+                <div class="card-h"><span>FLIGHT DIRECTOR</span><span class="state" id="stateText">STANDBY</span></div>
+                <div class="clock" id="clock">T− 00:10</div>
+                <div class="tele">
+                    <div class="cell big"><label>속력 VELOCITY</label><b id="tSpeed">0.00</b><i>km/s</i></div>
+                    <div class="cell big"><label>고도 ALTITUDE</label><b id="tAlt">0.0</b><i>km</i></div>
+                    <div class="cell"><label>수평 거리</label><b id="tRange">0</b><i>km</i></div>
+                    <div class="cell"><label>가속도</label><b id="tG">0.0</b><i>g</i></div>
+                    <div class="cell"><label>동압 Q</label><b id="tQ">0.0</b><i>kPa</i></div>
+                    <div class="cell"><label>궤도 근/원지점</label><b id="tOrbit">—</b><i>km</i></div>
+                </div>
+                <div class="fuel">
+                    <div class="fuel-h"><span id="fuelLabel">1단 추진제</span><b id="fuelPct">100%</b></div>
+                    <div class="bar">
+                        <div id="fuelBar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-h"><span>CONTROL</span></div>
+                <div class="btnrow">
+                    <button class="btn primary" id="btnLaunch">▶ 발사</button>
+                    <button class="btn" id="btnPause" disabled>Ⅱ 일시정지</button>
+                    <button class="btn danger" id="btnReset">↻ 리셋</button>
+                </div>
+                <div class="row">
+                    <label>시뮬레이션 배속</label>
+                    <div class="seg" id="rate">
+                        <button data-r="1" class="on">1×</button>
+                        <button data-r="2">2×</button>
+                        <button data-r="4">4×</button>
+                        <button data-r="8">8×</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <label>분리 방식</label>
+                    <div class="seg" id="mode">
+                        <button data-m="auto" class="on">자동</button>
+                        <button data-m="manual">수동</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <label for="scenario">이상 상황 주입</label>
+                    <select id="scenario">
+                        <option value="none">없음 (정상 비행)</option>
+                        <option value="sep1">1단 분리 불량</option>
+                        <option value="engine2">2단 엔진 이상</option>
+                        <option value="fuel">2단 연료 누설</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-h"><span>STAGE SEPARATION</span><span class="hint" id="manualHint">자동 모드</span></div>
+                <ul class="stages" id="stages">
+                    <li data-s="first" data-ev="sep1">
+                        <div><i>01</i><b>1단 엔진부</b></div>
+                        <span class="badge" id="b-first">ATTACHED</span>
+                        <button class="sepbtn" id="s-first" disabled>분리</button>
+                    </li>
+                    <li data-s="fairing" data-ev="fairing">
+                        <div><i>02</i><b>페어링</b></div>
+                        <span class="badge" id="b-fairing">ATTACHED</span>
+                        <button class="sepbtn" id="s-fairing" disabled>분리</button>
+                    </li>
+                    <li data-s="second" data-ev="sep2">
+                        <div><i>03</i><b>2단 추진부</b></div>
+                        <span class="badge" id="b-second">ATTACHED</span>
+                        <button class="sepbtn" id="s-second" disabled>분리</button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-h"><span>FLIGHT PROFILE</span></div>
+                <canvas id="chart" height="120"></canvas>
+                <div class="legend"><span class="l-alt">고도 (0–330 km)</span><span class="l-spd">속력 (0–8.2 km/s)</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-h"><span>EVENT LOG</span></div>
+                <ol class="log" id="log"></ol>
+            </div>
+        </aside>
+    </main>
+
+    <section class="timeline-wrap" aria-label="미션 타임라인">
+        <div class="card-h"><span>MISSION TIMELINE</span></div>
+        <ol class="timeline" id="timeline"></ol>
+    </section>
+
+    <footer>
+        ※ 교육용 개념 모델입니다. 실제 발사체의 형상·궤적·추진 성능을 재현하지 않습니다.
+        <span>단축키 · Space 발사/일시정지 · R 리셋 · M 소리</span>
+    </footer>
+
+    <script src="sim.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
